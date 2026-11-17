@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#171a1d">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Kalendár úloh</title>
+<style>
+:root{--bg:#171a1d;--panel:#22262a;--line:#2e3338;--tx:#e8eaed;--mut:#9aa0a6;--acc:#4fc3f7;--fab:#34444f;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#fff;--panel:#f1f3f4;--line:#dadce0;--tx:#202124;--mut:#5f6368;--fab:#d3e3fd}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--tx);font-family:Roboto,"Segoe UI",system-ui,sans-serif;overflow:hidden}
+#app{height:100%;display:flex;flex-direction:column}
+header{display:flex;align-items:center;gap:6px;padding:8px 10px;flex:none}
+header h1{font-size:20px;font-weight:400;margin:0 auto 0 8px;cursor:pointer}
+.ib{width:40px;height:40px;border:0;background:none;color:var(--tx);border-radius:50%;display:grid;place-items:center;cursor:pointer}
+.ib:active{background:var(--panel)}
+.ib svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.wd,.grid{display:grid;grid-template-columns:repeat(7,1fr)}
+.wd div{text-align:center;font-size:12px;color:var(--mut);padding:6px 0}
+.grid{flex:1;grid-template-rows:repeat(6,1fr);border-top:1px solid var(--line);min-height:0}
+.cell{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:4px 2px;display:flex;flex-direction:column;align-items:center;min-width:0}
+.cell:nth-child(7n){border-right:0}
+.num{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:13px;cursor:pointer}
+.out .num{color:var(--mut)}
+.today .num{background:var(--acc);color:#0b1d26;font-weight:600}
+.dots{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;max-height:64px;margin-top:2px}
+.dr{display:flex;gap:6px;justify-content:center}
+.dot{width:22px;height:22px;border-radius:50%;border:2.5px solid var(--c);background:transparent;padding:0;cursor:pointer;transition:background .15s}
+.df{position:relative}.df input[type=text]{padding-right:40px}
+.pk{position:absolute;right:0;top:0;width:42px;height:100%;opacity:0;border:0;padding:0}
+.df::after{content:"📅";position:absolute;right:11px;top:50%;transform:translateY(-50%);font-size:16px;pointer-events:none}
+.dot.on{background:var(--c)}
+.fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));width:56px;height:56px;border-radius:16px;border:0;background:var(--fab);color:var(--tx);font-size:30px;cursor:pointer;box-shadow:0 3px 10px #0006}
+.scrim{position:fixed;inset:0;background:#0009;display:none;z-index:20}
+.scrim.show{display:block}
+.drawer{position:fixed;top:0;bottom:0;left:0;width:min(84vw,330px);background:var(--panel);z-index:21;transform:translateX(-102%);transition:transform .22s;padding:calc(16px + env(safe-area-inset-top,0px)) 0 16px;overflow:auto}
+.drawer.show{transform:none}
+.drawer h2{font-size:15px;font-weight:500;margin:0 20px 10px;color:var(--mut)}
+.task{display:block;width:100%;text-align:left;background:none;border:0;padding:10px 20px;cursor:pointer;color:var(--tx)}
+.task:active{background:var(--line)}
+.task b{display:block;font-size:17px;font-weight:500;color:var(--c)}
+.task small{color:var(--mut);font-size:12px}
+.empty{padding:6px 20px;color:var(--mut);font-size:14px}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:31;background:var(--panel);border-radius:22px 22px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom,0px));transform:translateY(105%);transition:transform .22s;max-width:520px;margin:auto}
+.sheet.show{transform:none}
+.sheet h3{margin:0 0 14px;font-size:18px;font-weight:500}
+label{display:block;font-size:12px;color:var(--mut);margin:12px 0 4px}
+input[type=text],input[type=date]{width:100%;background:var(--bg);color:var(--tx);border:1px solid var(--line);border-radius:10px;padding:12px;font:inherit;font-size:16px;color-scheme:dark light}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.colorrow{display:flex;align-items:center;gap:12px;width:100%;background:var(--bg);border:1px solid var(--line);color:var(--tx);border-radius:10px;padding:10px 12px;font:inherit;cursor:pointer;margin-top:12px}
+.sw{width:22px;height:22px;border-radius:50%;background:var(--c);flex:none}
+.btns{display:flex;gap:10px;margin-top:18px}
+.btn{flex:1;border:0;border-radius:22px;padding:13px;font:inherit;font-weight:500;cursor:pointer;background:var(--acc);color:#0b1d26}
+.btn.del{background:none;color:#f28b82;border:1px solid var(--line);flex:.6}
+.err{color:#f28b82;font-size:13px;min-height:18px;margin-top:8px}
+.cs{z-index:41;text-align:center}
+.wheelbox{display:flex;align-items:center;justify-content:center;gap:22px;margin:6px 0 10px}
+.wheel{position:relative;width:200px;height:200px;touch-action:none}
+.wheel canvas{width:200px;height:200px;border-radius:50%}
+.mk{position:absolute;width:18px;height:18px;border:3px solid #fff;border-radius:50%;box-shadow:0 0 0 1px #000a;transform:translate(-50%,-50%);pointer-events:none}
+.prev{width:56px;height:56px;border-radius:50%;background:var(--c);border:2px solid var(--c)}
+input[type=range]{width:100%;margin:4px 0 8px}
+.hexrow{display:flex;gap:12px;align-items:center}
+.hexrow input{flex:1;font-family:ui-monospace,monospace}
+.ok{width:48px;height:48px;border-radius:50%;border:0;background:var(--acc);color:#0b1d26;display:grid;place-items:center;cursor:pointer}
+.ok svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <button class="ib" id="menu" aria-label="Zoznam úloh"><svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+    <h1 id="title"></h1>
+    <button class="ib" id="prev" aria-label="Predošlý mesiac"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <button class="ib" id="next" aria-label="Ďalší mesiac"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+    <button class="ib" id="today" aria-label="Dnes"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></button>
+  </header>
+  <div class="wd" id="wd"></div>
+  <div class="grid" id="grid"></div>
+</div>
+<button class="fab" id="add" aria-label="Pridať úlohu">+</button>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer"><h2>Moje úlohy</h2><div id="list"></div></aside>
+
+<div class="sheet" id="sheet">
+  <h3 id="sheetTitle">Nová úloha</h3>
+  <label for="name">Názov úlohy</label>
+  <input type="text" id="name" maxlength="60" autocomplete="off">
+  <div class="two">
+    <div><label for="from">Od</label><div class="df"><input type="text" id="from" inputmode="numeric" placeholder="DD/MM/RRRR" maxlength="10" autocomplete="off"><input type="date" class="pk" id="fromP" tabindex="-1"></div></div>
+    <div><label for="to">Do</label><div class="df"><input type="text" id="to" inputmode="numeric" placeholder="DD/MM/RRRR" maxlength="10" autocomplete="off"><input type="date" class="pk" id="toP" tabindex="-1"></div></div>
+  </div>
+  <button class="colorrow" id="colorBtn" type="button"><span class="sw" id="sw"></span>Farba</button>
+  <div class="err" id="err"></div>
+  <div class="btns"><button class="btn del" id="del" hidden>Zmazať</button><button class="btn" id="save">Vytvoriť</button></div>
+</div>
+
+<div class="sheet cs" id="csheet">
+  <div class="wheelbox">
+    <div class="wheel" id="wheel"><canvas id="cv" width="400" height="400"></canvas><div class="mk" id="mk"></div></div>
+    <div class="prev" id="prevc"></div>
+  </div>
+  <input type="range" id="val" min="10" max="100" value="100" aria-label="Jas">
+  <div class="hexrow"><input type="text" id="hex" maxlength="7" placeholder="#RRGGBB" autocomplete="off"><button class="ok" id="ok" aria-label="Potvrdiť farbu"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button></div>
+</div>
+
+<script>
+(function(){
+var MON=["Január","Február","Marec","Apríl","Máj","Jún","Júl","August","September","Október","November","December"];
+var WD=["P","U","S","Š","P","S","N"];
+var $=function(i){return document.getElementById(i)};
+var S={tasks:[],done:{}};
+try{var r=localStorage.getItem("kalendar-ulohy");if(r)S=JSON.parse(r)}catch(e){}
+function save(){try{localStorage.setItem("kalendar-ulohy",JSON.stringify(S))}catch(e){}}
+function ymd(y,m,d){return new Date(Date.UTC(y,m,d)).toISOString().slice(0,10)}
+var now=new Date(),TODAY=ymd(now.getFullYear(),now.getMonth(),now.getDate());
+var vy=now.getFullYear(),vm=now.getMonth();
+var editId=null,curColor="#4fc3f7";
+function fmt(s){var p=s.split("-");return +p[2]+". "+ +p[1]+". "+p[0]}
+function esc(t){var d=document.createElement("div");d.textContent=t;return d.innerHTML}
+
+$("wd").innerHTML=WD.map(function(w){return"<div>"+w+"</div>"}).join("");
+
+function dotH(t,d){var on=S.done[t.id]&&S.done[t.id][d];
+  return '<button class="dot'+(on?" on":"")+'" style="--c:'+t.color+'" data-t="'+t.id+'" data-d="'+d+'" aria-label="'+esc(t.name)+'"></button>'}
+function rows(ts,d){
+  if(!ts.length)return"";
+  var a=ts.slice(0,2).map(function(t){return dotH(t,d)}).join(""),h='<div class="dr">'+a+'</div>';
+  if(ts.length>2)h+='<div class="dr">'+ts.slice(2).map(function(t){return dotH(t,d)}).join("")+'</div>';
+  return h}
+function toDisp(s){var p=s.split("-");return p[2]+"/"+p[1]+"/"+p[0]}
+function parseD(v){var m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(v.trim());if(!m)return null;
+  var dd=+m[1],mm=+m[2],yy=+m[3],x=new Date(Date.UTC(yy,mm-1,dd));
+  if(x.getUTCDate()!==dd||x.getUTCMonth()!==mm-1)return null;return ymd(yy,mm-1,dd)}
+function mask(el){el.addEventListener("input",function(){var v=el.value.replace(/\D/g,"").slice(0,8),o=v.slice(0,2);
+  if(v.length>2)o+="/"+v.slice(2,4);if(v.length>4)o+="/"+v.slice(4);el.value=o})}
+function render(){
+  $("title").textContent=MON[vm]+" "+vy;
+  var off=(new Date(Date.UTC(vy,vm,1)).getUTCDay()+6)%7,h="";
+  for(var i=0;i<42;i++){
+    var d=ymd(vy,vm,1-off+i),dm=+d.slice(5,7)-1;
+    var ts=S.tasks.filter(function(t){return t.start<=d&&d<=t.end}).slice(0,4);
+    h+='<div class="cell'+(dm!==vm?" out":"")+(d===TODAY?" today":"")+'"><div class="num" data-d="'+d+'">'+ +d.slice(8)+'</div><div class="dots">'+rows(ts,d)+'</div></div>';
+  }
+  $("grid").innerHTML=h;
+}
+function renderList(){
+  var l=S.tasks.slice().sort(function(a,b){return a.start<b.start?-1:1});
+  $("list").innerHTML=l.length?l.map(function(t){
+    return '<button class="task" style="--c:'+t.color+'" data-id="'+t.id+'"><b>'+esc(t.name)+'</b><small>'+fmt(t.start)+' – '+fmt(t.end)+'</small></button>'}).join("")
+    :'<div class="empty">Zatiaľ žiadne úlohy. Pridaj ich tlačidlom +.</div>';
+}
+$("grid").addEventListener("click",function(e){
+  var b=e.target.closest(".dot");
+  if(b){var t=b.dataset.t,d=b.dataset.d;S.done[t]=S.done[t]||{};
+    if(S.done[t][d])delete S.done[t][d];else S.done[t][d]=1;save();b.classList.toggle("on");return}
+  var n=e.target.closest(".num");if(n)openSheet(null,n.dataset.d);
+});
+function nav(k){vm+=k;if(vm<0){vm=11;vy--}if(vm>11){vm=0;vy++}render()}
+$("prev").onclick=function(){nav(-1)};$("next").onclick=function(){nav(1)};
+$("today").onclick=function(){vy=now.getFullYear();vm=now.getMonth();render()};
+var sx=null;
+$("grid").addEventListener("touchstart",function(e){sx=e.touches[0].clientX},{passive:true});
+$("grid").addEventListener("touchend",function(e){if(sx===null)return;var dx=e.changedTouches[0].clientX-sx;sx=null;if(Math.abs(dx)>70)nav(dx<0?1:-1)},{passive:true});
+
+/* drawer */
+function drawer(o){$("drawer").classList.toggle("show",o);$("scrim").classList.toggle("show",o||$("sheet").classList.contains("show"))}
+$("menu").onclick=function(){renderList();drawer(true)};
+$("list").addEventListener("click",function(e){var b=e.target.closest(".task");if(b){drawer(false);openSheet(b.dataset.id)}});
+
+/* task sheet */
+function setColor(c){curColor=c;$("sw").style.setProperty("--c",c)}
+function openSheet(id,date){
+  editId=id;$("err").textContent="";
+  var t=id&&S.tasks.filter(function(x){return x.id===id})[0];
+  $("sheetTitle").textContent=t?"Upraviť úlohu":"Nová úloha";
+  $("save").textContent=t?"Uložiť":"Vytvoriť";$("del").hidden=!t;
+  $("name").value=t?t.name:"";
+  $("from").value=toDisp(t?t.start:(date||TODAY));$("to").value=toDisp(t?t.end:(date||TODAY));
+  setColor(t?t.color:["#4fc3f7","#f4511e","#33b679","#f6bf26","#8e24aa","#e67c73"][S.tasks.length%6]);
+  $("sheet").classList.add("show");$("scrim").classList.add("show");
+}
+function closeSheet(){$("sheet").classList.remove("show");$("csheet").classList.remove("show");$("scrim").classList.remove("show")}
+$("add").onclick=function(){openSheet(null)};
+$("scrim").onclick=function(){if($("csheet").classList.contains("show")){$("csheet").classList.remove("show")}else{drawer(false);closeSheet()}};
+mask($("from"));mask($("to"));
+$("fromP").onchange=function(){if(this.value){$("from").value=toDisp(this.value);fixTo()}};
+$("toP").onchange=function(){if(this.value)$("to").value=toDisp(this.value)};
+function fixTo(){var a=parseD($("from").value),b=parseD($("to").value);if(a&&(!b||b<a))$("to").value=$("from").value}
+$("from").onblur=fixTo;
+function conflict(s,e,id){
+  var d=s,n=0;
+  while(d<=e&&n++<4000){
+    var c=S.tasks.filter(function(t){return t.id!==id&&t.start<=d&&d<=t.end}).length;
+    if(c>=4)return d;
+    var p=d.split("-");d=ymd(+p[0],+p[1]-1,+p[2]+1);
+  }return null;
+}
+$("save").onclick=function(){
+  var nm=$("name").value.trim(),s=parseD($("from").value),e=parseD($("to").value);
+  if(!nm){$("err").textContent="Zadaj názov úlohy.";return}
+  if(!s||!e){$("err").textContent="Zadaj dátumy v tvare DD/MM/RRRR.";return}
+  if(e<s){$("err").textContent="Koniec nemôže byť pred začiatkom.";return}
+  var c=conflict(s,e,editId);
+  if(c){$("err").textContent="Dňa "+fmt(c)+" už sú 4 úlohy, to je maximum.";return}
+  if(editId){var t=S.tasks.filter(function(x){return x.id===editId})[0];t.name=nm;t.start=s;t.end=e;t.color=curColor}
+  else S.tasks.push({id:"t"+Date.now(),name:nm,start:s,end:e,color:curColor});
+  save();closeSheet();render();
+};
+$("del").onclick=function(){
+  if(!confirm("Naozaj zmazať túto úlohu?"))return;
+  S.tasks=S.tasks.filter(function(x){return x.id!==editId});delete S.done[editId];save();closeSheet();render();
+};
+
+/* color picker */
+var H=0,Sa=1,V=1,cv=$("cv"),cx=cv.getContext("2d"),R=200;
+function hsv2rgb(h,s,v){var f=function(n){var k=(n+h/60)%6;return v-v*s*Math.max(0,Math.min(k,4-k,1))};return[f(5),f(3),f(1)].map(function(x){return Math.round(x*255)})}
+function rgb2hsv(r,g,b){r/=255;g/=255;b/=255;var m=Math.max(r,g,b),n=Math.min(r,g,b),d=m-n,h=0;
+  if(d){if(m===r)h=((g-b)/d+6)%6;else if(m===g)h=(b-r)/d+2;else h=(r-g)/d+4;h*=60}
+  return[h,m?d/m:0,m]}
+function hex(){return"#"+hsv2rgb(H,Sa,V).map(function(x){return("0"+x.toString(16)).slice(-2)}).join("")}
+function drawWheel(){
+  var im=cx.createImageData(400,400),dt=im.data;
+  for(var y=0;y<400;y++)for(var x=0;x<400;x++){
+    var dx=x-R+.5,dy=y-R+.5,r=Math.sqrt(dx*dx+dy*dy),i=(y*400+x)*4;
+    if(r>R)continue;
+    var c=hsv2rgb((Math.atan2(dy,dx)*180/Math.PI+360)%360,r/R,V);
+    dt[i]=c[0];dt[i+1]=c[1];dt[i+2]=c[2];dt[i+3]=255;
+  }cx.putImageData(im,0,0);
+}
+function upd(skipHex){
+  var c=hex(),a=H*Math.PI/180;
+  $("mk").style.left=(100+Math.cos(a)*Sa*100)+"px";$("mk").style.top=(100+Math.sin(a)*Sa*100)+"px";
+  $("prevc").style.setProperty("--c",c);if(!skipHex)$("hex").value=c;
+}
+function pick(e){
+  var b=$("wheel").getBoundingClientRect(),dx=e.clientX-b.left-100,dy=e.clientY-b.top-100;
+  H=(Math.atan2(dy,dx)*180/Math.PI+360)%360;Sa=Math.min(1,Math.sqrt(dx*dx+dy*dy)/100);upd();
+}
+var drag=false,w=$("wheel");
+w.addEventListener("pointerdown",function(e){drag=true;w.setPointerCapture(e.pointerId);pick(e)});
+w.addEventListener("pointermove",function(e){if(drag)pick(e)});
+w.addEventListener("pointerup",function(){drag=false});
+$("val").oninput=function(){V=this.value/100;drawWheel();upd()};
+$("hex").oninput=function(){
+  var v=this.value.trim();if(v[0]!=="#")v="#"+v;
+  if(/^#[0-9a-f]{6}$/i.test(v)){var c=rgb2hsv(parseInt(v.slice(1,3),16),parseInt(v.slice(3,5),16),parseInt(v.slice(5,7),16));
+    H=c[0];Sa=c[1];V=Math.max(.1,c[2]);$("val").value=V*100;drawWheel();upd(true)}
+};
+$("colorBtn").onclick=function(){
+  var v=curColor,c=rgb2hsv(parseInt(v.slice(1,3),16),parseInt(v.slice(3,5),16),parseInt(v.slice(5,7),16));
+  H=c[0];Sa=c[1];V=Math.max(.1,c[2]);$("val").value=V*100;drawWheel();upd();
+  $("csheet").classList.add("show");
+};
+$("ok").onclick=function(){setColor(hex());$("csheet").classList.remove("show")};
+
+render();
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(function(){});
+})();
+</script>
+</body>
+</html>
